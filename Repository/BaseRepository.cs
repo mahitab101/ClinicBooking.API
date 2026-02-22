@@ -22,18 +22,16 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class
         await _dbSet.AddAsync(entity);
     }
 
-    public async Task Delete(Guid id)
+    public async Task<bool> Delete(Guid id)
     {
         var entity = await _dbSet.FindAsync(id);
-        if (entity == null)
-        {
-            throw new ArgumentException($"Entity with id {id} not found.");
-        }
+        if (entity == null) return false;
         if (entity is SoftDeleteEntity softDelete)
         {
             softDelete.IsDeleted = true;
             _dbSet.Update(entity);
         }
+        return true;
     }
 
     public async Task<List<T>> GetAllAsync()

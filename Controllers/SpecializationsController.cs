@@ -27,7 +27,7 @@ namespace ClinicBooking.API.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult> GetById(Guid id)
+        public async Task<IActionResult> GetById(Guid id)
         {
             var specialization = await _unitOfWork.Specializations.GetByIdAsync(id);
             if (specialization == null) return NotFound();
@@ -45,6 +45,30 @@ namespace ClinicBooking.API.Controllers
                 nameof(GetById),
                 new { id = Specialization.Id },
                 Specialization.ToDto());
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update([FromBody] UpdateSpecializationDto specializationDto, Guid id)
+        {
+            var specialization = await _unitOfWork.Specializations.GetByIdAsync(id);
+            if (specialization == null)
+                return NotFound();
+
+            specialization.UpdateEntity(specializationDto);
+            _unitOfWork.Specializations.Update(specialization);
+
+            await _unitOfWork.SaveChangesAsync();
+            return Ok(specialization.ToDto());
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var delete = await _unitOfWork.Specializations.Delete(id);
+            if (!delete) return NotFound();
+
+            await _unitOfWork.SaveChangesAsync();
+            return Ok("Specialization deleted successfully");
         }
     }
 }

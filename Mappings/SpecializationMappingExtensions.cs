@@ -24,4 +24,9 @@ public static class SpecializationMappingExtensions
         };
     }
 
+    public static void UpdateEntity(this Specialization entity, UpdateSpecializationDto dto)
+    {
+        entity.Name = dto.Name;
+    }
+
 }
