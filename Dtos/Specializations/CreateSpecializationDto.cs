@@ -1,6 +1,6 @@
 using System;
 
-namespace ClinicBooking.API.Dtos.Specialization;
+namespace ClinicBooking.API.Dtos.Specializations;
 
 public class CreateSpecializationDto
 {

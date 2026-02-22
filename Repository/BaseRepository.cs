@@ -12,10 +12,10 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class
     private readonly ApplicationDbContext _dbContext;
     private readonly DbSet<T> _dbSet;
 
-    public BaseRepository(ApplicationDbContext dbContext, DbSet<T> dbSet)
+    public BaseRepository(ApplicationDbContext dbContext)
     {
         _dbContext = dbContext;
-        _dbSet = dbSet;
+        _dbSet = _dbContext.Set<T>();
     }
     public async Task AddAsync(T entity)
     {
