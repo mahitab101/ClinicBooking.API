@@ -44,12 +44,11 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class
         var entity = await _dbSet.FindAsync(id);
         return entity;
     }
-    public void Update(T entity)
-    {
-        _dbSet.Update(entity);
-    }
-    public async Task<List<T>> FindAsync(
+    public void Update(T entity) => _dbSet.Update(entity);
+
+    public async Task<List<T>> GetByConditionAsync(
             Expression<Func<T, bool>> predicate)
             => await _dbSet.Where(predicate).ToListAsync();
 
+    public IQueryable<T> Query() => _dbSet.AsNoTracking();
 }
