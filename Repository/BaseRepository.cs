@@ -39,7 +39,7 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class
         return await _dbSet.ToListAsync();
     }
 
-    public async Task<T?> GetByIdAsync(Guid id)
+    public async Task<T> GetByIdAsync(Guid id)
     {
         var entity = await _dbSet.FindAsync(id);
         return entity;

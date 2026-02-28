@@ -8,21 +8,22 @@ public class DoctorDtoValidator : AbstractValidator<CreateDoctorDto>
 {
     public DoctorDtoValidator()
     {
-        RuleFor(x => x.FullName)
+        RuleFor(d => d.FullName)
                     .NotEmpty()
+                    .WithMessage("Doctor name is required")
                     .MinimumLength(3)
                     .MaximumLength(100);
 
-        RuleFor(x => x.Email)
+        RuleFor(d => d.Email)
             .NotEmpty()
             .EmailAddress();
 
-        RuleFor(x => x.Phone)
+        RuleFor(d => d.Phone)
             .NotEmpty()
             .Matches(@"^971\s\d{9}$")
             .WithMessage("Invalid phone number");
 
-        RuleFor(x => x.SpecializationId)
+        RuleFor(d => d.SpecializationId)
             .NotEmpty()
             .WithMessage("Specialization is required");
     }

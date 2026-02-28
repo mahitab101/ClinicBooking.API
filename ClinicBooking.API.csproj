@@ -20,7 +20,6 @@
     <Folder Include="Controllers\" />
     <Folder Include="Data\" />
     <Folder Include="Dtos\Doctors\" />
-    <Folder Include="Dtos\Patients\" />
     <Folder Include="Dtos\Specializations\" />
     <Folder Include="Enums\" />
     <Folder Include="Mappings\" />
