@@ -1,8 +1,12 @@
+using ClinicBooking.API.Common;
 using ClinicBooking.API.Contracts;
+using ClinicBooking.API.Dtos.Apoinments;
 using ClinicBooking.API.Dtos.Patients;
+using ClinicBooking.API.Helpers;
 using ClinicBooking.API.Mappings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace ClinicBooking.API.Controllers
 {
@@ -70,6 +74,28 @@ namespace ClinicBooking.API.Controllers
 
             await _unitOfWork.SaveChangesAsync();
             return Ok("Record deleted successfully");
+        }
+
+        [HttpGet("{id}/appointments")]
+        public async Task<ActionResult<PagedResult<AppointmentSummaryDto>>> GetAppointments(Guid id, int pageNumber = 1, int pageSize = 10)
+        {
+            var exist = await _unitOfWork.Patients.Query().AnyAsync(p => p.Id == id);
+            if (!exist) return NotFound();
+
+            var query = _unitOfWork.Appointments
+                                         .Query()
+                                         .Where(a => a.PatientId == id)
+                                         .OrderByDescending(a => a.AppointmentDate)
+                                         .Select(a => new AppointmentSummaryDto
+                                         {
+                                             Id = a.Id,
+                                             AppointmentDate = a.AppointmentDate,
+                                             Status = a.Status,
+                                             DoctorId = a.DoctorId,
+                                             DoctorName = a.Doctor.FullName
+                                         });
+            var response = await query.ToPagedResultAsync(pageNumber, pageSize);
+            return response;
         }
     }
 }

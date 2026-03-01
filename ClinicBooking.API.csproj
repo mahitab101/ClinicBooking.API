@@ -22,7 +22,7 @@
     <Folder Include="Dtos\Doctors\" />
     <Folder Include="Dtos\Specializations\" />
     <Folder Include="Enums\" />
-    <Folder Include="Mappings\" />
+    <Folder Include="Helpers\" />
   </ItemGroup>
 
 </Project>
