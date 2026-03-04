@@ -26,5 +26,9 @@ public class DoctorDtoValidator : AbstractValidator<CreateDoctorDto>
         RuleFor(d => d.SpecializationId)
             .NotEmpty()
             .WithMessage("Specialization is required");
+
+        RuleFor(d => d.ConsultationFee)
+            .GreaterThan(0)
+            .WithMessage("Consultation fee must be greater than zero");
     }
 }

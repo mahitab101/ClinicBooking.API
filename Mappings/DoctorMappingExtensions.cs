@@ -1,6 +1,7 @@
 using System;
 using ClinicBooking.API.Dtos.Doctors;
 using ClinicBooking.API.Entities;
+using ClinicBooking.API.Enums;
 
 namespace ClinicBooking.API.Mappings;
 
@@ -15,7 +16,11 @@ public static class DoctorMappingExtensions
             Email = doctor.Email,
             Phone = doctor.Phone,
             SpecializationId = doctor.SpecializationId,
-            SpecializationName = doctor.Specialization?.Name
+            SpecializationName = doctor.Specialization?.Name,
+            Gender = doctor.Gender,
+            DoctorLevel = doctor.DoctorLevel,
+            ConsultationFee = doctor.ConsultationFee
+
         };
     }
 
@@ -27,6 +32,9 @@ public static class DoctorMappingExtensions
             FullName = dto.FullName,
             Email = dto.Email,
             Phone = dto.Phone,
+            Gender = dto.Gender,
+            DoctorLevel = dto.DoctorLevel,
+            ConsultationFee = dto.ConsultationFee,
             SpecializationId = dto.SpecializationId
         };
     }
@@ -36,6 +44,9 @@ public static class DoctorMappingExtensions
         doctor.FullName = dto.FullName;
         doctor.Email = dto.Email;
         doctor.Phone = dto.Phone;
+        doctor.Gender = dto.Gender;
+        doctor.DoctorLevel = dto.DoctorLevel;
+        doctor.ConsultationFee = dto.ConsultationFee;
         doctor.SpecializationId = dto.SpecializationId;
     }
 }

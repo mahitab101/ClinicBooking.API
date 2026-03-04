@@ -22,10 +22,20 @@ public class ApplicationDbContext : DbContext
         builder.Entity<Appointment>().HasIndex(a => new { a.DoctorId, a.AppointmentDate }).IsUnique();
         builder.Entity<MedicalRecord>().HasIndex(m => m.AppointmentId).IsUnique();
 
+        builder.Entity<DoctorSchedule>()
+               .HasOne(s => s.Doctor)
+               .WithMany(d => d.Schedules)
+               .HasForeignKey(s => s.DoctorId);
+
+        builder.Entity<Doctor>()
+               .Property(d => d.Gender)
+               .HasConversion<string>();
+
         // Globel Filter
         builder.Entity<Doctor>().HasQueryFilter(d => !d.IsDeleted);
         builder.Entity<Patient>().HasQueryFilter(d => !d.IsDeleted);
         builder.Entity<Specialization>().HasQueryFilter(d => !d.IsDeleted);
+        builder.Entity<DoctorSchedule>().HasQueryFilter(s => !s.IsDeleted);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
