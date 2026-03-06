@@ -1,9 +1,7 @@
-using System;
 using ClinicBooking.API.Dtos.Apoinment;
 using ClinicBooking.API.Dtos.Apoinments;
 using ClinicBooking.API.Entities;
-
-namespace ClinicBooking.API.Mappings;
+using ClinicBooking.API.Enums;
 
 public static class AppointmentMappingExtensions
 {
@@ -13,6 +11,7 @@ public static class AppointmentMappingExtensions
         {
             Id = appointment.Id,
             AppointmentDate = appointment.AppointmentDate,
+            Status = appointment.Status,
             DoctorId = appointment.DoctorId,
             PatientId = appointment.PatientId
         };
@@ -26,6 +25,7 @@ public static class AppointmentMappingExtensions
             AppointmentDate = dto.AppointmentDate,
             DoctorId = dto.DoctorId,
             PatientId = dto.PatientId,
+            Status = AppointmentStatus.Pending
         };
     }
 
