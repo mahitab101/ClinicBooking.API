@@ -92,7 +92,9 @@ namespace ClinicBooking.API.Controllers
                                              AppointmentDate = a.AppointmentDate,
                                              Status = a.Status,
                                              DoctorId = a.DoctorId,
-                                             DoctorName = a.Doctor.FullName
+                                             DoctorName = a.Doctor.FullName,
+                                             PatientId = a.PatientId,
+                                             PatientName = a.Patient.FullName
                                          });
             var response = await query.ToPagedResultAsync(pageNumber, pageSize);
             return response;

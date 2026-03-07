@@ -1,8 +1,11 @@
 using ClinicBooking.API.Contracts;
-using ClinicBooking.API.Dtos.Apoinment;
+using Microsoft.EntityFrameworkCore;
+using ClinicBooking.API.Dtos.Apoinments;
 using ClinicBooking.API.Mappings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using ClinicBooking.API.Dtos.Apoinment;
+using ClinicBooking.API.Enums;
 
 namespace ClinicBooking.API.Controllers
 {
@@ -17,7 +20,7 @@ namespace ClinicBooking.API.Controllers
             _unitOfWork = unitOfWork;
         }
         [HttpGet]
-        public async Task<ActionResult> GetAll()
+        public async Task<IActionResult> GetAll()
         {
             var appoinments = await _unitOfWork.Appointments.GetAllAsync();
             var response = appoinments.Select(a => a.ToDto());
@@ -25,7 +28,7 @@ namespace ClinicBooking.API.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult> GetById(Guid id)
+        public async Task<IActionResult> GetById(Guid id)
         {
             var appoinment = await _unitOfWork.Appointments.GetByIdAsync(id);
             if (appoinment == null) return NotFound();
@@ -34,7 +37,7 @@ namespace ClinicBooking.API.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> Create([FromBody] CreateAppointmentDto appointmentDto)
+        public async Task<IActionResult> Create([FromBody] CreateAppointmentDto appointmentDto)
         {
             //TODO: unified the response
             var patient = await _unitOfWork.Patients.GetByIdAsync(appointmentDto.PatientId);
@@ -50,5 +53,40 @@ namespace ClinicBooking.API.Controllers
 
             return CreatedAtAction(nameof(GetById), new { id = appointment.Id }, appointment.ToDto());
         }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(Guid id, UpdateAppointmentDto dto)
+        {
+            var appointment = await _unitOfWork.Appointments.GetByIdAsync(id);
+
+            if (appointment == null)
+                return NotFound();
+
+            var doctorExists = await _unitOfWork.Doctors
+                .Query()
+                .AnyAsync(d => d.Id == dto.DoctorId);
+
+            if (!doctorExists)
+                return BadRequest("Doctor not found");
+
+            var conflict = await _unitOfWork.Appointments
+                .Query()
+                .AnyAsync(a =>
+                    a.DoctorId == dto.DoctorId &&
+                    a.AppointmentDate == dto.AppointmentDate &&
+                    a.Id != id &&
+                    (a.Status == AppointmentStatus.Pending ||
+                     a.Status == AppointmentStatus.Confirmed));
+
+            if (conflict)
+                return BadRequest("Doctor already has an appointment at this time");
+
+            appointment.UpdateEntity(dto);
+
+            await _unitOfWork.SaveChangesAsync();
+
+            return Ok(appointment.ToDto());
+        }
+
     }
 }
