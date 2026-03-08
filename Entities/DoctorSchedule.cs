@@ -5,8 +5,6 @@ namespace ClinicBooking.API.Entities;
 
 public class DoctorSchedule : SoftDeleteEntity
 {
-    public Guid Id { get; set; }
-
     public Guid DoctorId { get; set; }
     public Doctor? Doctor { get; set; }
 

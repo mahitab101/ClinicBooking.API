@@ -14,11 +14,14 @@ namespace ClinicBooking.API.Controllers
     public class AppointmentsController : ControllerBase
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IAppointmentService _appointmentService;
 
-        public AppointmentsController(IUnitOfWork unitOfWork)
+        public AppointmentsController(IUnitOfWork unitOfWork, IAppointmentService appointmentService)
         {
             _unitOfWork = unitOfWork;
+            _appointmentService = appointmentService;
         }
+
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -86,6 +89,55 @@ namespace ClinicBooking.API.Controllers
             await _unitOfWork.SaveChangesAsync();
 
             return Ok(appointment.ToDto());
+        }
+
+        [HttpPatch("{id}/confirm")]
+        public async Task<IActionResult> Confirm(Guid id)
+        {
+            try
+            {
+                var result = await _appointmentService.Confirm(id);
+                if (!result) return NotFound();
+
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPatch("{id}/complete")]
+        public async Task<IActionResult> Complete(Guid id)
+        {
+            try
+            {
+                var result = await _appointmentService.Complete(id);
+                if (!result) return NotFound();
+
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPatch("{id}/cancel")]
+        public async Task<IActionResult> Cancel(Guid id)
+        {
+            try
+            {
+
+                var result = await _appointmentService.Cancel(id);
+                if (!result) return NotFound();
+
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
     }
