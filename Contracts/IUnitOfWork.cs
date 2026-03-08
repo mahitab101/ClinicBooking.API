@@ -9,5 +9,6 @@ public interface IUnitOfWork : IDisposable
     IBaseRepository<Doctor> Doctors { get; }
     IBaseRepository<Patient> Patients { get; }
     IBaseRepository<Appointment> Appointments { get; }
+    IBaseRepository<DoctorSchedule> DoctorSchedules { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

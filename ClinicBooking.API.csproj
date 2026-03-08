@@ -19,6 +19,7 @@
   <ItemGroup>
     <Folder Include="Controllers\" />
     <Folder Include="Data\" />
+    <Folder Include="Dtos\DoctorSchedules\" />
     <Folder Include="Dtos\Doctors\" />
     <Folder Include="Dtos\Specializations\" />
     <Folder Include="Enums\" />

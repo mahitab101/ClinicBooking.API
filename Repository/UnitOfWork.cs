@@ -16,6 +16,7 @@ public class UnitOfWork : IUnitOfWork
     public IBaseRepository<Patient> Patients { get; }
 
     public IBaseRepository<Appointment> Appointments { get; }
+    public IBaseRepository<DoctorSchedule> DoctorSchedules { get; }
 
     public UnitOfWork(ApplicationDbContext dbContext)
     {
@@ -25,6 +26,7 @@ public class UnitOfWork : IUnitOfWork
         Doctors = new BaseRepository<Doctor>(_dbContext);
         Patients = new BaseRepository<Patient>(_dbContext);
         Appointments = new BaseRepository<Appointment>(_dbContext);
+        DoctorSchedules = new BaseRepository<DoctorSchedule>(_dbContext);
     }
     public void Dispose()
     {
