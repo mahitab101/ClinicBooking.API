@@ -1,5 +1,6 @@
 using ClinicBooking.API.Contracts;
 using ClinicBooking.API.Dtos.DoctorSchedules;
+using ClinicBooking.API.Enums;
 using ClinicBooking.API.Mappings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -82,6 +83,50 @@ namespace ClinicBooking.API.Controllers
             await _unitOfWork.SaveChangesAsync();
 
             return Ok("Record deleted successfully");
+        }
+
+        [HttpGet("doctor/{doctorId}/available-slots")]
+        public async Task<IActionResult> GetAvailableSlots(Guid doctorId, DateTime date)
+        {
+            var schedules = await _unitOfWork.DoctorSchedules
+                .Query()
+                .Where(s =>
+                    s.DoctorId == doctorId &&
+                    s.DayOfWeek == date.DayOfWeek)
+                .ToListAsync();
+
+            if (!schedules.Any())
+                return Ok(new List<DateTime>());
+
+            var allSlots = new List<DateTime>();
+
+            foreach (var schedule in schedules)
+            {
+                var start = date.Date + schedule.StartTime;
+                var end = date.Date + schedule.EndTime;
+
+                while (start < end)
+                {
+                    allSlots.Add(start);
+                    start = start.AddMinutes(schedule.SlotDurationMinutes);
+                }
+            }
+
+            // get booked appointments
+            var booked = await _unitOfWork.Appointments
+                .Query()
+                .Where(a =>
+                    a.DoctorId == doctorId &&
+                    a.AppointmentDate.Date == date.Date &&
+                    a.Status != AppointmentStatus.Cancelled)
+                .Select(a => a.AppointmentDate)
+                .ToListAsync();
+
+            var available = allSlots
+                .Where(slot => !booked.Contains(slot))
+                .ToList();
+
+            return Ok(available);
         }
     }
 }
