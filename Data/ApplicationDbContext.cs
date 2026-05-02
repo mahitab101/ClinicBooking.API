@@ -1,9 +1,9 @@
+using System;
 using ClinicBooking.API.Common;
 using ClinicBooking.API.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System;
 
 namespace ClinicBooking.API.Data;
 
@@ -22,22 +22,57 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
         builder.Entity<Appointment>().HasIndex(a => new { a.DoctorId, a.AppointmentDate }).IsUnique();
         builder.Entity<MedicalRecord>().HasIndex(m => m.AppointmentId).IsUnique();
+
+        // Fix decimal precision warning
+        builder.Entity<Doctor>()
+               .Property(d => d.ConsultationFee)
+               .HasPrecision(18, 2);
+
+        builder.Entity<Doctor>()
+               .Property(d => d.Gender)
+               .HasConversion<string>();
 
         builder.Entity<DoctorSchedule>()
                .HasOne(s => s.Doctor)
                .WithMany(d => d.Schedules)
                .HasForeignKey(s => s.DoctorId);
 
+        // Break cascade cycles
         builder.Entity<Doctor>()
-               .Property(d => d.Gender)
-               .HasConversion<string>();
+               .HasOne(d => d.User)
+               .WithMany()
+               .HasForeignKey(d => d.UserId)
+               .OnDelete(DeleteBehavior.NoAction);
 
-        // Globel Filter
+        builder.Entity<Patient>()
+               .HasOne(p => p.User)
+               .WithMany()
+               .HasForeignKey(p => p.UserId)
+               .OnDelete(DeleteBehavior.NoAction);
+
+        // Fix "required end of relationship filtered out" warning
+        // Make Appointment -> Doctor navigation optional so soft-deleted doctors don't break queries
+        builder.Entity<Appointment>()
+               .HasOne(a => a.Doctor)
+               .WithMany(d => d.Appointments)
+               .HasForeignKey(a => a.DoctorId)
+               .IsRequired(false)
+               .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<Appointment>()
+               .HasOne(a => a.Patient)
+               .WithMany(p => p.Appointments)
+               .HasForeignKey(a => a.PatientId)
+               .IsRequired(false)
+               .OnDelete(DeleteBehavior.NoAction);
+
+        // Global Filters
         builder.Entity<Doctor>().HasQueryFilter(d => !d.IsDeleted);
-        builder.Entity<Patient>().HasQueryFilter(d => !d.IsDeleted);
-        builder.Entity<Specialization>().HasQueryFilter(d => !d.IsDeleted);
+        builder.Entity<Patient>().HasQueryFilter(p => !p.IsDeleted);
+        builder.Entity<Specialization>().HasQueryFilter(s => !s.IsDeleted);
         builder.Entity<DoctorSchedule>().HasQueryFilter(s => !s.IsDeleted);
     }
 

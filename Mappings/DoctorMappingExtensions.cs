@@ -19,8 +19,12 @@ public static class DoctorMappingExtensions
             SpecializationName = doctor.Specialization?.Name,
             Gender = doctor.Gender,
             DoctorLevel = doctor.DoctorLevel,
-            ConsultationFee = doctor.ConsultationFee
-
+            ConsultationFee = doctor.ConsultationFee,
+            CertificateUrl = doctor.CertificateUrl,
+            IsApproved = doctor.IsApproved,
+            IsActive = doctor.IsActive,
+            IsRejected = doctor.IsRejected,
+            RejectionReason = doctor.RejectionReason
         };
     }
 
@@ -35,7 +39,7 @@ public static class DoctorMappingExtensions
             Gender = dto.Gender,
             DoctorLevel = dto.DoctorLevel,
             ConsultationFee = dto.ConsultationFee,
-            SpecializationId = dto.SpecializationId
+            SpecializationId = dto.SpecializationId ?? null
         };
     }
 

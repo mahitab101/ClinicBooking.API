@@ -11,5 +11,5 @@ public class UpdateDoctorDto
     public Gender Gender { get; set; }
     public DoctorLevel DoctorLevel { get; set; }
     public decimal ConsultationFee { get; set; }
-    public Guid SpecializationId { get; set; }
+    public Guid? SpecializationId { get; set; }
 }

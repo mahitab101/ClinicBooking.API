@@ -19,7 +19,13 @@ public class DoctorResponseDto
     public DoctorLevel DoctorLevel { get; set; }
     public decimal ConsultationFee { get; set; }
 
-    public Guid SpecializationId { get; set; }
+    public Guid? SpecializationId { get; set; }
 
-    public string SpecializationName { get; set; }
+    public string? SpecializationName { get; set; }
+
+    public string? CertificateUrl { get; set; }
+    public bool IsApproved { get; set; }
+    public bool IsActive { get; set; }
+    public bool IsRejected { get; set; }
+    public string? RejectionReason { get; set; }
 }
