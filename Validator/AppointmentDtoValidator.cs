@@ -1,5 +1,5 @@
 using System;
-using ClinicBooking.API.Dtos.Apoinment;
+using ClinicBooking.API.Dtos.Appoinments;
 using FluentValidation;
 
 namespace ClinicBooking.API.Validator;

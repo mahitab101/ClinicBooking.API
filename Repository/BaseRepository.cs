@@ -36,13 +36,13 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class
 
     public async Task<List<T>> GetAllAsync()
     {
-        return await _dbSet.ToListAsync();
+        return await _dbSet.AsQueryable().ToListAsync();
     }
 
     public async Task<T> GetByIdAsync(Guid id)
     {
-        var entity = await _dbSet.FindAsync(id);
-        return entity;
+        return await _dbSet.AsQueryable()
+            .FirstOrDefaultAsync(e => EF.Property<Guid>(e, "Id") == id);
     }
     public void Update(T entity) => _dbSet.Update(entity);
 

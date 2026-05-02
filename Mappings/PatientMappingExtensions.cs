@@ -1,5 +1,5 @@
 using System;
-using ClinicBooking.API.Dtos.Apoinment;
+using ClinicBooking.API.Dtos.Appoinments;
 using ClinicBooking.API.Dtos.Patients;
 using ClinicBooking.API.Entities;
 

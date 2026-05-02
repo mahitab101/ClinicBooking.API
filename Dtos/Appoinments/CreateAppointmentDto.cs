@@ -1,5 +1,5 @@
 
-namespace ClinicBooking.API.Dtos.Apoinment;
+namespace ClinicBooking.API.Dtos.Appoinments;
 
 public class CreateAppointmentDto
 {

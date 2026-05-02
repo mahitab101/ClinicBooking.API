@@ -1,5 +1,5 @@
-using ClinicBooking.API.Dtos.Apoinment;
-using ClinicBooking.API.Dtos.Apoinments;
+
+using ClinicBooking.API.Dtos.Appoinments;
 using ClinicBooking.API.Entities;
 using ClinicBooking.API.Enums;
 

@@ -1,6 +1,6 @@
 using System;
 
-namespace ClinicBooking.API.Dtos.Apoinments;
+namespace ClinicBooking.API.Dtos.Appoinments;
 
 public class UpdateAppointmentDto
 {

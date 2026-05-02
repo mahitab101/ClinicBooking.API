@@ -1,11 +1,12 @@
-﻿namespace ClinicBooking.API.Entities
+﻿using Microsoft.AspNetCore.Identity;
+
+namespace ClinicBooking.API.Entities
 {
-    public class ApplicationUser
+    public class ApplicationUser : IdentityUser<Guid>
     {
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public string FullName { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public string? RefreshToken { get; set; }
-        public DateTime RefreshTokenExpiryTime { get; set; }
+        public DateTime? RefreshTokenExpiryTime { get; set; }
     }
 }

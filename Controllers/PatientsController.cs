@@ -1,6 +1,6 @@
 using ClinicBooking.API.Common;
 using ClinicBooking.API.Contracts;
-using ClinicBooking.API.Dtos.Apoinments;
+using ClinicBooking.API.Dtos.Appoinments;
 using ClinicBooking.API.Dtos.Patients;
 using ClinicBooking.API.Helpers;
 using ClinicBooking.API.Mappings;

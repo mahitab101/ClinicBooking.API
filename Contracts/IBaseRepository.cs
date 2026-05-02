@@ -5,7 +5,7 @@ namespace ClinicBooking.API.Contracts;
 
 public interface IBaseRepository<T> where T : class
 {
-    Task<T> GetByIdAsync(Guid id);
+    Task<T?> GetByIdAsync(Guid id);
     Task<List<T>> GetAllAsync();
     Task<List<T>> GetByConditionAsync(Expression<Func<T, bool>> predicate);
     Task AddAsync(T entity);

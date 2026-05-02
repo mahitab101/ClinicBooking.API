@@ -1,7 +1,7 @@
 using System;
 using ClinicBooking.API.Enums;
 
-namespace ClinicBooking.API.Dtos.Apoinments;
+namespace ClinicBooking.API.Dtos.Appoinments;
 
 public class AppointmentResponseDto
 {

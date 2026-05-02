@@ -1,11 +1,10 @@
 using ClinicBooking.API.Contracts;
 using Microsoft.EntityFrameworkCore;
-using ClinicBooking.API.Dtos.Apoinments;
 using ClinicBooking.API.Mappings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using ClinicBooking.API.Dtos.Apoinment;
 using ClinicBooking.API.Enums;
+using ClinicBooking.API.Dtos.Appoinments;
 
 namespace ClinicBooking.API.Controllers
 {
