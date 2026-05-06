@@ -1,11 +1,12 @@
+using ClinicBooking.API.Common;
 using ClinicBooking.API.Contracts;
 using ClinicBooking.API.Dtos.Doctors;
+using ClinicBooking.API.Entities;
 using ClinicBooking.API.Mappings;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using ClinicBooking.API.Entities;
 
 namespace ClinicBooking.API.Controllers
 {
@@ -18,17 +19,13 @@ namespace ClinicBooking.API.Controllers
         private readonly IEmailService _emailService;
         private readonly UserManager<ApplicationUser> _userManager;
 
-        public DoctorsController(
-            IUnitOfWork unitOfWork,
-            IEmailService emailService,
-            UserManager<ApplicationUser> userManager)
+        public DoctorsController(IUnitOfWork unitOfWork, IEmailService emailService, UserManager<ApplicationUser> userManager)
         {
             _unitOfWork = unitOfWork;
             _emailService = emailService;
             _userManager = userManager;
         }
 
-        // Admin, Doctor, Patient — browse approved doctors only
         [HttpGet]
         [Authorize(Roles = "Admin,Doctor,Patient")]
         public async Task<IActionResult> GetAll()
@@ -39,7 +36,8 @@ namespace ClinicBooking.API.Controllers
                 .Include(d => d.Specialization)
                 .Select(d => d.ToDto())
                 .ToListAsync();
-            return Ok(doctors);
+
+            return Ok(ApiResponse<List<DoctorResponseDto>>.Ok(doctors));
         }
 
         [HttpGet("{id}")]
@@ -51,13 +49,12 @@ namespace ClinicBooking.API.Controllers
                 .Include(d => d.Specialization)
                 .FirstOrDefaultAsync(d => d.Id == id);
 
-            if (doctor == null) return NotFound();
-            return Ok(doctor.ToDto());
+            if (doctor == null)
+                return NotFound(ApiResponse.FailNoData($"Doctor with id {id} not found."));
+
+            return Ok(ApiResponse<DoctorResponseDto>.Ok(doctor.ToDto()));
         }
 
-        // ─── Approval workflow (Admin only) ───────────────────────────────────
-
-        /// <summary>Get all doctors pending approval</summary>
         [HttpGet("pending")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetPending()
@@ -68,23 +65,24 @@ namespace ClinicBooking.API.Controllers
                 .Include(d => d.Specialization)
                 .Select(d => d.ToDto())
                 .ToListAsync();
-            return Ok(pending);
+
+            return Ok(ApiResponse<List<DoctorResponseDto>>.Ok(pending));
         }
 
-        /// <summary>Approve a doctor — assign specialization and set them active</summary>
         [HttpPatch("{id}/approve")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Approve(Guid id, [FromBody] ApproveDoctorDto dto)
         {
             var doctor = await _unitOfWork.Doctors.GetByIdAsync(id);
-            if (doctor == null) return NotFound();
+            if (doctor == null)
+                return NotFound(ApiResponse.FailNoData($"Doctor with id {id} not found."));
 
             if (doctor.IsApproved)
-                return BadRequest(new { message = "Doctor is already approved." });
+                return BadRequest(ApiResponse.FailNoData("Doctor is already approved."));
 
             var specialization = await _unitOfWork.Specializations.GetByIdAsync(dto.SpecializationId);
             if (specialization == null)
-                return BadRequest(new { message = "Invalid specialization." });
+                return BadRequest(ApiResponse.FailNoData("Invalid specialization."));
 
             doctor.IsApproved = true;
             doctor.IsActive = true;
@@ -97,41 +95,32 @@ namespace ClinicBooking.API.Controllers
             _unitOfWork.Doctors.Update(doctor);
             await _unitOfWork.SaveChangesAsync();
 
-            // Notify doctor
             await _emailService.SendDoctorApprovedAsync(doctor.Email, doctor.FullName);
 
-            return Ok(new { message = $"Dr. {doctor.FullName} has been approved." });
+            return Ok(ApiResponse.OkNoData($"Dr. {doctor.FullName} has been approved."));
         }
 
-        /// <summary>
-        /// Reject a doctor.
-        /// Permanent = true  → deletes ApplicationUser + Doctor row (fraud/fake cert)
-        /// Permanent = false → soft reject, doctor can resubmit documents
-        /// </summary>
         [HttpPatch("{id}/reject")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Reject(Guid id, [FromBody] RejectDoctorDto dto)
         {
             var doctor = await _unitOfWork.Doctors.GetByIdAsync(id);
-            if (doctor == null) return NotFound();
+            if (doctor == null)
+                return NotFound(ApiResponse.FailNoData($"Doctor with id {id} not found."));
 
-            // Notify doctor before any deletion
             await _emailService.SendDoctorRejectedAsync(doctor.Email, doctor.FullName, dto.Reason);
 
             if (dto.Permanent)
             {
-                // Hard delete — remove user account and doctor profile entirely
                 var user = await _userManager.FindByIdAsync(doctor.UserId.ToString());
-                if (user != null)
-                    await _userManager.DeleteAsync(user);
+                if (user != null) await _userManager.DeleteAsync(user);
 
                 await _unitOfWork.Doctors.Delete(id);
                 await _unitOfWork.SaveChangesAsync();
 
-                return Ok(new { message = "Doctor account permanently removed." });
+                return Ok(ApiResponse.OkNoData("Doctor account permanently removed."));
             }
 
-            // Soft reject — keep the account, allow resubmission
             doctor.IsRejected = true;
             doctor.IsApproved = false;
             doctor.IsActive = false;
@@ -140,10 +129,8 @@ namespace ClinicBooking.API.Controllers
             _unitOfWork.Doctors.Update(doctor);
             await _unitOfWork.SaveChangesAsync();
 
-            return Ok(new { message = "Doctor application rejected. They can resubmit documents." });
+            return Ok(ApiResponse.OkNoData("Doctor application rejected. They can resubmit documents."));
         }
-
-        // ─── Standard CRUD (Admin only) ───────────────────────────────────────
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
@@ -151,17 +138,17 @@ namespace ClinicBooking.API.Controllers
         {
             if (doctorDto.SpecializationId.HasValue)
             {
-                var specialization = await _unitOfWork.Specializations
-                    .GetByIdAsync(doctorDto.SpecializationId.Value);
+                var specialization = await _unitOfWork.Specializations.GetByIdAsync(doctorDto.SpecializationId.Value);
                 if (specialization == null)
-                    return BadRequest("Invalid specialization");
+                    return BadRequest(ApiResponse.FailNoData("Invalid specialization."));
             }
 
             var doctor = doctorDto.ToEntity();
             await _unitOfWork.Doctors.AddAsync(doctor);
             await _unitOfWork.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetById), new { id = doctor.Id }, doctor.ToDto());
+            return CreatedAtAction(nameof(GetById), new { id = doctor.Id },
+                ApiResponse<DoctorResponseDto>.Ok(doctor.ToDto(), "Doctor created successfully."));
         }
 
         [HttpPut("{id}")]
@@ -169,13 +156,14 @@ namespace ClinicBooking.API.Controllers
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateDoctorDto doctorDto)
         {
             var doctor = await _unitOfWork.Doctors.GetByIdAsync(id);
-            if (doctor == null) return NotFound();
+            if (doctor == null)
+                return NotFound(ApiResponse.FailNoData($"Doctor with id {id} not found."));
 
             doctor.UpdateEntity(doctorDto);
             _unitOfWork.Doctors.Update(doctor);
             await _unitOfWork.SaveChangesAsync();
 
-            return Ok(doctor.ToDto());
+            return Ok(ApiResponse<DoctorResponseDto>.Ok(doctor.ToDto(), "Doctor updated successfully."));
         }
 
         [HttpDelete("{id}")]
@@ -183,10 +171,11 @@ namespace ClinicBooking.API.Controllers
         public async Task<IActionResult> Delete(Guid id)
         {
             var deleted = await _unitOfWork.Doctors.Delete(id);
-            if (!deleted) return NotFound();
+            if (!deleted)
+                return NotFound(ApiResponse.FailNoData($"Doctor with id {id} not found."));
 
             await _unitOfWork.SaveChangesAsync();
-            return NoContent();
+            return Ok(ApiResponse.OkNoData("Doctor deleted successfully."));
         }
     }
 }

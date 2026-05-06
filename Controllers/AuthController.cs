@@ -1,3 +1,4 @@
+using ClinicBooking.API.Common;
 using ClinicBooking.API.Contracts;
 using ClinicBooking.API.Dtos.Auth;
 using Microsoft.AspNetCore.Authorization;
@@ -18,81 +19,45 @@ public class AuthController : ControllerBase
         _authService = authService;
     }
 
-    /// <summary>
-    /// Register a new user.
-    /// For Doctors: send as multipart/form-data and include the Certificate file.
-    /// For Patients/Admins: JSON is fine.
-    /// </summary>
     [HttpPost("register")]
     [AllowAnonymous]
     [Consumes("multipart/form-data")]
-    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register([FromForm] RegisterDto dto)
     {
-        try
-        {
-            var result = await _authService.RegisterAsync(dto);
+        var result = await _authService.RegisterAsync(dto);
 
-            // Doctor pending approval — no cookie, just return the info message
-            if (result.UserInfo.IsPendingApproval)
-                return Ok(result.UserInfo);
+        if (result.UserInfo.IsPendingApproval)
+            return Ok(ApiResponse<AuthResponseDto>.Ok(result.UserInfo,
+                "Registration successful. Your account is pending admin approval."));
 
-            SetTokenCookies(result);
-            return Ok(result.UserInfo);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        SetTokenCookies(result);
+        return Ok(ApiResponse<AuthResponseDto>.Ok(result.UserInfo, "Registration successful."));
     }
 
-    /// <summary>Login with email and password</summary>
     [HttpPost("login")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
-        try
-        {
-            var result = await _authService.LoginAsync(dto);
-            SetTokenCookies(result);
-            return Ok(result.UserInfo);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
+        var result = await _authService.LoginAsync(dto);
+        SetTokenCookies(result);
+        return Ok(ApiResponse<AuthResponseDto>.Ok(result.UserInfo, "Login successful."));
     }
 
-    /// <summary>Silently refresh the access token using the refresh_token cookie</summary>
     [HttpPost("refresh-token")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RefreshToken()
     {
         var refreshToken = Request.Cookies[RefreshTokenCookie];
         if (string.IsNullOrEmpty(refreshToken))
-            return Unauthorized(new { message = "No refresh token found." });
+            return Unauthorized(ApiResponse.FailNoData("No refresh token found."));
 
-        try
-        {
-            var result = await _authService.RefreshTokenAsync(refreshToken);
-            SetTokenCookies(result);
-            return Ok(result.UserInfo);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
+        var result = await _authService.RefreshTokenAsync(refreshToken);
+        SetTokenCookies(result);
+        return Ok(ApiResponse<AuthResponseDto>.Ok(result.UserInfo, "Token refreshed."));
     }
 
-    /// <summary>Logout — clears both token cookies and revokes the refresh token</summary>
     [HttpPost("logout")]
     [AllowAnonymous]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Logout()
     {
         var refreshToken = Request.Cookies[RefreshTokenCookie];
@@ -100,20 +65,19 @@ public class AuthController : ControllerBase
             await _authService.RevokeRefreshTokenAsync(refreshToken);
 
         ClearTokenCookies();
-        return NoContent();
+        return Ok(ApiResponse.OkNoData("Logged out successfully."));
     }
 
-    /// <summary>Get current logged-in user info from the JWT cookie</summary>
     [HttpGet("me")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult Me()
     {
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
         var fullName = User.FindFirst("fullName")?.Value;
         var roles = User.FindAll(System.Security.Claims.ClaimTypes.Role).Select(c => c.Value).ToList();
-        return Ok(new { userId, email, fullName, roles });
+
+        return Ok(ApiResponse<object>.Ok(new { userId, email, fullName, roles }));
     }
 
     // ─── Cookie Helpers ───────────────────────────────────────────────────────

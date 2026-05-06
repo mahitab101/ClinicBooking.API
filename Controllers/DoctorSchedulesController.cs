@@ -1,3 +1,4 @@
+using ClinicBooking.API.Common;
 using ClinicBooking.API.Contracts;
 using ClinicBooking.API.Dtos.DoctorSchedules;
 using ClinicBooking.API.Enums;
@@ -20,13 +21,12 @@ namespace ClinicBooking.API.Controllers
             _unitOfWork = unitOfWork;
         }
 
-        // Admin, Doctor — view all schedules
         [HttpGet]
         [Authorize(Roles = "Admin,Doctor")]
         public async Task<IActionResult> GetAll()
         {
             var schedules = await _unitOfWork.DoctorSchedules.GetAllAsync();
-            return Ok(schedules.Select(s => s.ToDto()));
+            return Ok(ApiResponse<IEnumerable<object>>.Ok(schedules.Select(s => s.ToDto())));
         }
 
         [HttpGet("{id}")]
@@ -34,52 +34,54 @@ namespace ClinicBooking.API.Controllers
         public async Task<IActionResult> GetById(Guid id)
         {
             var schedule = await _unitOfWork.DoctorSchedules.GetByIdAsync(id);
-            if (schedule == null) return NotFound();
-            return Ok(schedule.ToDto());
+            if (schedule == null)
+                return NotFound(ApiResponse.FailNoData($"Schedule with id {id} not found."));
+
+            return Ok(ApiResponse<object>.Ok(schedule.ToDto()));
         }
 
-        // Admin only — create schedules
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create(CreateDoctorScheduleDto dto)
         {
             var doctorExists = await _unitOfWork.Doctors.Query().AnyAsync(d => d.Id == dto.DoctorId);
-            if (!doctorExists) return BadRequest("Doctor not found");
+            if (!doctorExists)
+                return NotFound(ApiResponse.FailNoData("Doctor not found."));
 
             var schedule = dto.ToEntity();
             await _unitOfWork.DoctorSchedules.AddAsync(schedule);
             await _unitOfWork.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetById), new { id = schedule.Id }, schedule.ToDto());
+            return CreatedAtAction(nameof(GetById), new { id = schedule.Id },
+                ApiResponse<object>.Ok(schedule.ToDto(), "Schedule created successfully."));
         }
 
-        // Admin only — update schedules
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(Guid id, UpdateDoctorScheduleDto dto)
         {
             var schedule = await _unitOfWork.DoctorSchedules.GetByIdAsync(id);
-            if (schedule == null) return NotFound();
+            if (schedule == null)
+                return NotFound(ApiResponse.FailNoData($"Schedule with id {id} not found."));
 
             schedule.UpdateEntity(dto);
             await _unitOfWork.SaveChangesAsync();
 
-            return Ok(schedule.ToDto());
+            return Ok(ApiResponse<object>.Ok(schedule.ToDto(), "Schedule updated successfully."));
         }
 
-        // Admin only — delete schedules
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(Guid id)
         {
             var deleted = await _unitOfWork.DoctorSchedules.Delete(id);
-            if (!deleted) return NotFound();
+            if (!deleted)
+                return NotFound(ApiResponse.FailNoData($"Schedule with id {id} not found."));
 
             await _unitOfWork.SaveChangesAsync();
-            return NoContent();
+            return Ok(ApiResponse.OkNoData("Schedule deleted successfully."));
         }
 
-        // Everyone — patients use this to pick a slot when booking
         [HttpGet("doctor/{doctorId}/available-slots")]
         [Authorize(Roles = "Admin,Doctor,Patient")]
         public async Task<IActionResult> GetAvailableSlots(Guid doctorId, DateTime date)
@@ -90,7 +92,7 @@ namespace ClinicBooking.API.Controllers
                 .ToListAsync();
 
             if (!schedules.Any())
-                return Ok(new List<DateTime>());
+                return Ok(ApiResponse<List<DateTime>>.Ok(new List<DateTime>(), "No schedule found for this day."));
 
             var allSlots = new List<DateTime>();
             foreach (var schedule in schedules)
@@ -113,7 +115,8 @@ namespace ClinicBooking.API.Controllers
                 .Select(a => a.AppointmentDate)
                 .ToListAsync();
 
-            return Ok(allSlots.Where(slot => !booked.Contains(slot)).ToList());
+            var available = allSlots.Where(slot => !booked.Contains(slot)).ToList();
+            return Ok(ApiResponse<List<DateTime>>.Ok(available));
         }
     }
 }

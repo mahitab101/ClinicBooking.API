@@ -23,29 +23,28 @@ namespace ClinicBooking.API.Controllers
             _unitOfWork = unitOfWork;
         }
 
-        // Admin, Doctor — full patient list
         [HttpGet]
         [Authorize(Roles = "Admin,Doctor")]
         public async Task<IActionResult> GetAll()
         {
             var patients = await _unitOfWork.Patients.GetAllAsync();
-            return Ok(patients.Select(p => p.ToDto()));
+            return Ok(ApiResponse<IEnumerable<object>>.Ok(patients.Select(p => p.ToDto())));
         }
 
-        // Admin, Doctor can view anyone; Patient can only view themselves
         [HttpGet("{id}")]
         [Authorize(Roles = "Admin,Doctor,Patient")]
         public async Task<IActionResult> GetById(Guid id)
         {
             if (User.IsInRole("Patient") && !IsCurrentUser(id))
-                return Forbid();
+                return StatusCode(403, ApiResponse.FailNoData("You can only view your own profile."));
 
             var patient = await _unitOfWork.Patients.GetByIdAsync(id);
-            if (patient == null) return NotFound();
-            return Ok(patient.ToDto());
+            if (patient == null)
+                return NotFound(ApiResponse.FailNoData($"Patient with id {id} not found."));
+
+            return Ok(ApiResponse<object>.Ok(patient.ToDto()));
         }
 
-        // Admin only — create a patient record
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create([FromBody] CreatePatientDto patientDto)
@@ -54,50 +53,50 @@ namespace ClinicBooking.API.Controllers
             await _unitOfWork.Patients.AddAsync(patient);
             await _unitOfWork.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetById), new { id = patient.Id }, patient.ToDto());
+            return CreatedAtAction(nameof(GetById), new { id = patient.Id },
+                ApiResponse<object>.Ok(patient.ToDto(), "Patient created successfully."));
         }
 
-        // Admin can update anyone; Patient can only update themselves
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin,Patient")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdatePatientDto patientDto)
         {
             if (User.IsInRole("Patient") && !IsCurrentUser(id))
-                return Forbid();
+                return StatusCode(403, ApiResponse.FailNoData("You can only update your own profile."));
 
             var patient = await _unitOfWork.Patients.GetByIdAsync(id);
-            if (patient == null) return NotFound();
+            if (patient == null)
+                return NotFound(ApiResponse.FailNoData($"Patient with id {id} not found."));
 
             patient.UpdateEntity(patientDto);
             _unitOfWork.Patients.Update(patient);
             await _unitOfWork.SaveChangesAsync();
 
-            return Ok(patient.ToDto());
+            return Ok(ApiResponse<object>.Ok(patient.ToDto(), "Patient updated successfully."));
         }
 
-        // Admin only — soft-delete a patient
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(Guid id)
         {
             var deleted = await _unitOfWork.Patients.Delete(id);
-            if (!deleted) return NotFound();
+            if (!deleted)
+                return NotFound(ApiResponse.FailNoData($"Patient with id {id} not found."));
 
             await _unitOfWork.SaveChangesAsync();
-            return NoContent();
+            return Ok(ApiResponse.OkNoData("Patient deleted successfully."));
         }
 
-        // Admin, Doctor can view anyone's appointments; Patient can only view their own
         [HttpGet("{id}/appointments")]
         [Authorize(Roles = "Admin,Doctor,Patient")]
-        public async Task<ActionResult<PagedResult<AppointmentSummaryDto>>> GetAppointments(
-            Guid id, int pageNumber = 1, int pageSize = 10)
+        public async Task<IActionResult> GetAppointments(Guid id, int pageNumber = 1, int pageSize = 10)
         {
             if (User.IsInRole("Patient") && !IsCurrentUser(id))
-                return Forbid();
+                return StatusCode(403, ApiResponse.FailNoData("You can only view your own appointments."));
 
             var exists = await _unitOfWork.Patients.Query().AnyAsync(p => p.Id == id);
-            if (!exists) return NotFound();
+            if (!exists)
+                return NotFound(ApiResponse.FailNoData($"Patient with id {id} not found."));
 
             var query = _unitOfWork.Appointments
                 .Query()
@@ -114,14 +113,11 @@ namespace ClinicBooking.API.Controllers
                     PatientName = a.Patient.FullName
                 });
 
-            return await query.ToPagedResultAsync(pageNumber, pageSize);
+            var paged = await query.ToPagedResultAsync(pageNumber, pageSize);
+            return Ok(ApiResponse<object>.Ok(paged));
         }
 
-        // ─── Helper ──────────────────────────────────────────────────────────
-        private bool IsCurrentUser(Guid id)
-        {
-            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return currentUserId == id.ToString();
-        }
+        private bool IsCurrentUser(Guid id) =>
+            User.FindFirstValue(ClaimTypes.NameIdentifier) == id.ToString();
     }
 }
